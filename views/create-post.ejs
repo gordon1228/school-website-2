@@ -1,0 +1,46 @@
+<!-- views/create-post.ejs -->
+<%- include('partials/header', { title: 'Create Post - School Website' }) %>
+<%- include('partials/navbar', { isAuthenticated: true }) %>
+
+<div class="admin-header">
+    <div class="container">
+        <h1><i class="fas fa-plus-circle me-2"></i>Create New Post</h1>
+        <p class="mb-0">Add a new announcement, news, or update</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="/admin/create">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Post Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   placeholder="Enter post title..." required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="content" class="form-label">Post Content</label>
+                            <textarea class="form-control" id="content" name="content" rows="10" 
+                                      placeholder="Enter post content..." required></textarea>
+                            <div class="form-text">You can use line breaks to format your content.</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/admin/dashboard" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-admin">
+                                <i class="fas fa-save me-2"></i>Create Post
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>
