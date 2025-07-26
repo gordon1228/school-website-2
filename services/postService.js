@@ -55,6 +55,14 @@ class PostService {
                 return { success: false, errors: validation.errors };
             }
 
+            // Validate image count
+            if (imageFiles && imageFiles.length > 2) {
+                return { 
+                    success: false, 
+                    errors: ['Maximum 2 images allowed per post'] 
+                };
+            }
+
             const pool = getPool();
             const id = this.generateId();
             
@@ -89,7 +97,6 @@ class PostService {
                     }
                 }
             }
-            
             return { 
                 success: true, 
                 id,
@@ -99,7 +106,7 @@ class PostService {
             console.error('Error creating post:', error);
             return { success: false, error: error.message };
         }
-    }
+    }   
 
     // Update an existing post with image support
     static async updatePost(id, title, content, adminUserId = null, imageFiles = []) {
@@ -108,6 +115,20 @@ class PostService {
             const validation = this.validatePostData(title, content);
             if (!validation.isValid) {
                 return { success: false, errors: validation.errors };
+            }
+
+            // Check current image count
+            const existingImages = await imageService.getPostImages(id);
+            const currentImageCount = existingImages.length;
+            const newImageCount = imageFiles ? imageFiles.length : 0;
+            
+            // Validate total image count
+            const imageValidation = this.validateImageCount(currentImageCount, newImageCount);
+            if (!imageValidation.isValid) {
+                return { 
+                    success: false, 
+                    errors: [imageValidation.error] 
+                };
             }
 
             const pool = getPool();
@@ -236,6 +257,21 @@ class PostService {
             isValid: errors.length === 0,
             errors
         };
+    }
+
+    // Validate image count for posts
+    static validateImageCount(existingImageCount, newImageCount) {
+    const totalImages = existingImageCount + newImageCount;
+    const maxImages = 2;
+    
+        if (totalImages > maxImages) {
+            return {
+                isValid: false,
+                error: `Maximum ${maxImages} images allowed per post. Current: ${existingImageCount}, trying to add: ${newImageCount}`
+            };
+        }
+        
+        return { isValid: true };
     }
 
     // Generate unique ID

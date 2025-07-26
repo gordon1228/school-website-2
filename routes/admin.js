@@ -8,6 +8,29 @@ const { requireAuth } = require('../middleware/auth');
 // Configure multer for image uploads
 const upload = imageService.getMulterConfig();
 
+// Preserve post data on error
+// This function will be used to ensure we keep the post data even if an error occurs during the update
+async function preservePostDataOnError(postId, title, content) {
+    try {
+        const post = await PostService.getPostById(postId);
+        if (post) {
+            post.title = title || post.title;
+            post.content = content || post.content;
+            return post;
+        }
+    } catch (error) {
+        console.error('Error preserving post data:', error);
+    }
+    
+    // Fallback
+    return { 
+        id: postId, 
+        title: title || '', 
+        content: content || '',
+        images: [] 
+    };
+}
+
 // Admin dashboard
 router.get('/dashboard', requireAuth, async (req, res) => {
     console.log('=== DASHBOARD ACCESS ===');
@@ -30,57 +53,88 @@ router.get('/create', requireAuth, (req, res) => {
 });
 
 // Create post POST with image upload
-router.post('/create', requireAuth, upload.array('images', 2), async (req, res) => {
+router.post('/edit/:id', requireAuth, upload.array('images', 2), async (req, res) => {
     const { title, content } = req.body;
     const adminUserId = req.session.userId;
     const imageFiles = req.files || [];
     
     try {
-        const result = await PostService.createPost(title, content, adminUserId, imageFiles);
+        const result = await PostService.updatePost(req.params.id, title, content, adminUserId, imageFiles);
         
         if (result.success) {
-            console.log(`Created post with ${result.uploadedImages?.length || 0} images`);
+            console.log(`Updated post with ${result.uploadedImages?.length || 0} new images`);
             res.redirect('/admin/dashboard');
         } else {
             // Handle validation errors
             if (result.errors) {
-                return res.status(400).render('create-post', { 
-                    errors: result.errors,
-                    title: title || '',
-                    content: content || ''
+                // IMPORTANT: Get the full post data including existing images
+                const post = await PostService.getPostById(req.params.id);
+                if (post) {
+                    // Update the post with the form data that was submitted
+                    post.title = title || post.title;
+                    post.content = content || post.content;
+                    // Keep the existing images - this is the key fix!
+                } else {
+                    // Fallback if post not found
+                    post = { 
+                        id: req.params.id, 
+                        title: title || '', 
+                        content: content || '',
+                        images: [] 
+                    };
+                }
+                
+                return res.status(400).render('edit-post', { 
+                    post,
+                    errors: result.errors
                 });
             }
-            res.status(500).send('Error creating post: ' + result.error);
+            res.status(500).send('Error updating post: ' + result.error);
         }
     } catch (error) {
-        console.error('Error creating post:', error);
+        console.error('Error updating post:', error);
+        // Preserve post data on error
+        const post = await preservePostDataOnError(req.params.id, title, content);
         
-        // Handle multer errors
+        // Handle multer errors - also need to preserve existing images here
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).render('create-post', {
-                errors: ['File size too large. Maximum size is 5MB per image.'],
-                title: title || '',
-                content: content || ''
+            const post = await PostService.getPostById(req.params.id);
+            if (post) {
+                post.title = title || post.title;
+                post.content = content || post.content;
+                // Existing images are preserved from getPostById
+            }
+            return res.status(400).render('edit-post', {
+                post: post || { id: req.params.id, title: title || '', content: content || '', images: [] },
+                errors: ['File size too large. Maximum size is 5MB per image.']
             });
         }
         
         if (error.code === 'LIMIT_FILE_COUNT') {
-            return res.status(400).render('create-post', {
-                errors: ['Too many files. Maximum 2 images per post.'],
-                title: title || '',
-                content: content || ''
+            const post = await PostService.getPostById(req.params.id);
+            if (post) {
+                post.title = title || post.title;
+                post.content = content || post.content;
+            }
+            return res.status(400).render('edit-post', {
+                post: post || { id: req.params.id, title: title || '', content: content || '', images: [] },
+                errors: ['Too many files. Maximum 2 images per post.']
             });
         }
         
-        if (error.message.includes('Invalid file type')) {
-            return res.status(400).render('create-post', {
-                errors: [error.message],
-                title: title || '',
-                content: content || ''
+        if (error.message && error.message.includes('Invalid file type')) {
+            const post = await PostService.getPostById(req.params.id);
+            if (post) {
+                post.title = title || post.title;
+                post.content = content || post.content;
+            }
+            return res.status(400).render('edit-post', {
+                post: post || { id: req.params.id, title: title || '', content: content || '', images: [] },
+                errors: [error.message]
             });
         }
         
-        res.status(500).send('Error creating post');
+        res.status(500).send('Error updating post');
     }
 });
 

@@ -68,7 +68,7 @@ app.use((err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_COUNT') {
         return res.status(400).json({
             success: false,
-            error: 'Too many files. Maximum 5 images per post.'
+            error: 'Too many files. Maximum 2 images per post.' // Changed from 5 to 2
         });
     }
     
