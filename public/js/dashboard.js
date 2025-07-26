@@ -202,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 3000);
             });
         });
+        
 
         // Add custom styles for SortableJS
         const style = document.createElement('style');
@@ -257,4 +258,30 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('Dashboard drag & drop initialized successfully');
     }
+
+    
+});
+
+
+// Function to open image modal
+// This function is used to display images in a modal when clicked
+function openImageModal(imageSrc) {
+    document.getElementById('modalImage').src = imageSrc;
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    imageModal.show();
+}
+
+// Add smooth hover effects
+document.addEventListener('DOMContentLoaded', function() {
+    const images = document.querySelectorAll('.post-images img');
+    images.forEach(img => {
+        img.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+            this.style.transition = 'transform 0.2s ease';
+        });
+        
+        img.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
 });

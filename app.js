@@ -1,7 +1,8 @@
-// Fixed app.js - Remove conflicting routes
+// Fixed app.js - Updated with uploads support
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -16,11 +17,15 @@ const { debugSession } = require('./middleware/auth');
 // Routes
 const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
-const publicRoutes = require('./routes/public'); // Add this
+const publicRoutes = require('./routes/public');
 
 // App configuration
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -51,6 +56,29 @@ app.use('/admin', authRoutes);     // Auth routes (login, logout)
 // Global error handler
 app.use((err, req, res, next) => {
     console.error(err.stack);
+    
+    // Handle multer errors
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+            success: false,
+            error: 'File size too large. Maximum size is 5MB per image.'
+        });
+    }
+    
+    if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+            success: false,
+            error: 'Too many files. Maximum 5 images per post.'
+        });
+    }
+    
+    if (err.message && err.message.includes('Invalid file type')) {
+        return res.status(400).json({
+            success: false,
+            error: err.message
+        });
+    }
+    
     res.status(500).send('Something went wrong!');
 });
 
@@ -64,6 +92,21 @@ async function startServer() {
     try {
         await connectDB();
         console.log('Database connected successfully');
+        
+        // Ensure upload directories exist
+        const fs = require('fs');
+        const uploadsDir = path.join(__dirname, 'uploads');
+        const publicUploadsDir = path.join(__dirname, 'public/uploads');
+        
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+            console.log('Created uploads directory');
+        }
+        
+        if (!fs.existsSync(publicUploadsDir)) {
+            fs.mkdirSync(publicUploadsDir, { recursive: true });
+            console.log('Created public uploads directory');
+        }
         
         app.listen(PORT, () => {
             console.log(`School website running on http://localhost:${PORT}`);

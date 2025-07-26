@@ -36,6 +36,37 @@
                                         minute: '2-digit'
                                     }) %>
                                 </p>
+                                
+                                <!-- Post Images -->
+                                <% if (post.images && post.images.length > 0) { %>
+                                    <div class="post-images mb-3">
+                                        <% if (post.images.length === 1) { %>
+                                            <!-- Single image -->
+                                            <div class="single-image text-center">
+                                                <img src="<%= post.images[0].public_path %>" 
+                                                     class="img-fluid rounded shadow-sm" 
+                                                     alt="Post image"
+                                                     style="height: 350px; width: 50%; object-fit: cover; cursor: pointer;"
+                                                     onclick="openImageModal('<%= post.images[0].public_path %>')">
+                                            </div>
+                                        <% } else { %>
+                                            <!-- Two images - side by side -->
+                                            <div class="row g-2 justify-content-center">
+                                                <% post.images.forEach(function(image) { %>
+                                                    <div class="col-auto">
+                                                        <img src="<%= image.public_path %>" 
+                                                             class="img-fluid rounded shadow-sm" 
+                                                             alt="Post image"
+                                                             style="height: 350px; width: 250px; object-fit: cover; cursor: pointer;"
+                                                             onclick="openImageModal('<%= image.public_path %>')">
+                                                    </div>
+                                                <% }); %>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                <% } %>
+                                
+                                <!-- Post Content -->
                                 <div class="card-text">
                                     <%- post.content.replace(/\n/g, '<br>') %>
                                 </div>
@@ -53,5 +84,21 @@
         </div>
     </div>
 </div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Image View</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" class="img-fluid" alt="Full size image">
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <%- include('partials/footer') %>

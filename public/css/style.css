@@ -23,8 +23,6 @@ footer {
     margin-top: auto;
 }
 
-/* Rest of your existing CSS stays the same... */
-
 /* Custom styles for the school website */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -67,6 +65,95 @@ body {
     font-size: 0.9rem;
 }
 
+/* Image-related styles */
+.post-images {
+    margin: 1rem 0;
+}
+
+.post-images img {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 8px;
+}
+
+.post-images img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.single-image img {
+    max-width: 50%;
+    height: 350px;
+    object-fit: cover;
+}
+
+/* Dashboard image thumbnails */
+.table .rounded {
+    border-radius: 8px !important;
+}
+
+/* Two images side by side layout */
+.post-images .row.justify-content-center {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.post-images .col-auto img {
+    height: 350px;
+    width: 250px;
+    object-fit: cover;
+}
+
+/* Image preview styles for forms */
+#image-preview-container .card {
+    transition: transform 0.2s ease;
+}
+
+#image-preview-container .card:hover {
+    transform: translateY(-2px);
+}
+
+.image-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color 0.2s ease;
+}
+
+.image-upload-area:hover {
+    border-color: #667eea;
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+.image-upload-area.dragover {
+    border-color: #667eea;
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+/* Modal image styles */
+.modal-body img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+}
+
+/* Existing image management in edit form */
+.existing-images .card {
+    position: relative;
+    overflow: hidden;
+}
+
+.existing-images .btn-outline-danger {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.existing-images .card:hover .btn-outline-danger {
+    opacity: 1;
+}
+
 .admin-header {
     background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
     color: white;
@@ -102,13 +189,88 @@ body {
 }
 
 .table-responsive > table {
-  margin-bottom: 0;
-  border-collapse: collapse;
+    margin-bottom: 0;
+    border-collapse: collapse;
 }
+
 .table-responsive th, .table-responsive td {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid #dee2e6;
+}
+
+/* Image grid layouts for different counts */
+.image-grid-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+.image-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.image-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.image-grid-3 img:first-child {
+    grid-column: 1 / -1;
+}
+
+.image-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+/* File upload styling */
+.form-control[type="file"] {
+    padding: 0.5rem;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-right: 1rem;
+    cursor: pointer;
+}
+
+.form-control[type="file"]::-webkit-file-upload-button:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+/* Loading states */
+.image-loading {
+    position: relative;
+}
+
+.image-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* Mobile optimizations */
@@ -132,6 +294,23 @@ body {
     .table-responsive {
         font-size: 0.9rem;
     }
+    
+    /* Mobile image sizing */
+    .post-images .single-image img {
+        height: 250px !important;
+        width: 80% !important;
+    }
+    
+    .post-images .col-auto img {
+        height: 200px !important;
+        width: 150px !important;
+    }
+    
+    /* Dashboard thumbnails on mobile */
+    .table img {
+        height: 50px !important;
+        width: 60px !important;
+    }
 }
 
 @media (max-width: 576px) {
@@ -150,7 +329,98 @@ body {
     
     .login-container {
         margin: 2rem auto;
+    .login-container {
+        margin: 2rem auto;
         margin-left: 1rem;
         margin-right: 1rem;
     }
+    
+    /* Very small screens - stack images vertically */
+    .post-images .row.justify-content-center {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .post-images .single-image img {
+        height: 200px !important;
+        width: 90% !important;
+    }
+    
+    .post-images .col-auto img {
+        height: 180px !important;
+        width: 200px !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    #image-preview-container .col-md-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+.login-container {
+    margin: 2rem auto;
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+/* Single column for very small screens */
+.image-grid-2,
+    .image-grid-3,
+    .image-grid-4 {
+        grid-template-columns: 1fr;
+    }
+    
+    .post-images img {
+        height: 200px !important;
+    }
+    
+    #image-preview-container .col-md-4 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}
+
+/* Animation for new images */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.image-fade-in {
+    animation: fadeInUp 0.3s ease forwards;
+}
+
+/* Drag and drop styling */
+.drag-over {
+    border-color: #667eea !important;
+    background-color: rgba(102, 126, 234, 0.1) !important;
+}
+
+/* Alert improvements */
+.alert {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    color: white;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+    color: #212529;
 }
