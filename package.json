@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "nodemon --ignore '*.json' app.js",
     "start": "node app.js",
-    "hash-password": "node scripts/hash-password.js"
+    "hash-password": "node scripts/hash-password.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "echo \"No linter configured\"",
+    "setup-db": "node scripts/setup-database.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -15,12 +18,23 @@
     "body-parser": "^1.20.2",
     "mssql": "^10.0.1",
     "bcrypt": "^5.1.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "validator": "^13.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
   "nodemon": {
-    "ignore": ["*.json", "data/"]
-  }
+    "ignore": ["*.json", "data/", "logs/"]
+  },
+  "keywords": [
+    "school",
+    "website",
+    "cms",
+    "admin",
+    "mssql",
+    "express"
+  ],
+  "author": "School Administration",
+  "license": "MIT"
 }
