@@ -1,0 +1,218 @@
+<!-- views/categories.ejs -->
+<%- include('partials/header', { title: 'Manage Categories - School Website' }) %>
+<%- include('partials/navbar', { isAuthenticated: true }) %>
+
+<div class="main-content">
+<div class="admin-header">
+    <div class="container">
+        <h1><i class="fas fa-tags me-2"></i>Manage Categories</h1>
+        <p class="mb-0">Organize your content with categories</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="dashboard-actions">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="mb-3 mb-md-0">
+                    <i class="fas fa-list me-2"></i>Category Overview
+                </h4>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="/admin/dashboard" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <% if (categories && categories.length > 0) { %>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="50">Color</th>
+                                        <th>Category Name</th>
+                                        <th>Description</th>
+                                        <th class="text-center" width="120">Post Count</th>
+                                        <th class="text-center" width="100">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% categories.forEach(function(category) { %>
+                                        <tr>
+                                            <td class="align-middle">
+                                                <span class="badge rounded-pill" 
+                                                      style="background-color: '<%= category.color %>'; width: 24px; height: 24px;">
+                                                </span>
+                                            </td>
+                                            <td class="align-middle">
+                                                <h6 class="mb-1"><%= category.name %></h6>
+                                                <small class="text-muted">Slug: <%= category.slug %></small>
+                                            </td>
+                                            <td class="align-middle">
+                                                <% if (category.description) { %>
+                                                    <small class="text-muted"><%= category.description %></small>
+                                                <% } else { %>
+                                                    <small class="text-muted fst-italic">No description</small>
+                                                <% } %>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <% if (category.post_count > 0) { %>
+                                                    <a href="/category/<%= category.slug %>" class="text-decoration-none">
+                                                        <span class="badge bg-primary rounded-pill">
+                                                            <%= category.post_count %>
+                                                        </span>
+                                                    </a>
+                                                <% } else { %>
+                                                    <span class="badge bg-secondary rounded-pill">0</span>
+                                                <% } %>
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <span class="badge bg-success">Active</span>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Statistics -->
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-tags fa-2x text-primary mb-2"></i>
+                                <h4 class="card-title"><%= categories.length %></h4>
+                                <p class="card-text text-muted">Total Categories</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-newspaper fa-2x text-success mb-2"></i>
+                                <h4 class="card-title">
+                                    <%= categories.reduce((sum, cat) => sum + cat.post_count, 0) %>
+                                </h4>
+                                <p class="card-text text-muted">Categorized Posts</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-chart-bar fa-2x text-info mb-2"></i>
+                                <h4 class="card-title">
+                                    <%= Math.round(categories.reduce((sum, cat) => sum + cat.post_count, 0) / categories.length) %>
+                                </h4>
+                                <p class="card-text text-muted">Avg Posts/Category</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                                <h4 class="card-title">
+                                    <% const mostUsed = categories.reduce((max, cat) => cat.post_count > max.post_count ? cat : max, categories[0] || { post_count: 0 }) %>
+                                    <%= mostUsed.post_count %>
+                                </h4>
+                                <p class="card-text text-muted">Most Used Category</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Most Used Categories Chart -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Category Usage</h5>
+                    </div>
+                    <div class="card-body">
+                        <% if (categories.some(cat => cat.post_count > 0)) { %>
+                            <div class="row">
+                                <% categories.filter(cat => cat.post_count > 0).forEach(function(category) { %>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge rounded-pill me-3" 
+                                                  style="background-color: '<%= category.color %>'; width: 16px; height: 16px;"></span>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between">
+                                                    <span><%= category.name %></span>
+                                                    <span class="text-muted"><%= category.post_count %> posts</span>
+                                                </div>
+                                                <div class="progress mt-1" style="height: 6px;">
+                                                    <% const maxPosts = Math.max(...categories.map(c => c.post_count)) %>
+                                                    <% const percentage = maxPosts > 0 ? (category.post_count / maxPosts) * 100 : 0 %>
+                                                    <div class="progress-bar" 
+                                                         style="width: '<%= percentage %>%; background-color: ''<%= category.color %>';">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        <% } else { %>
+                            <div class="text-center py-4">
+                                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No posts have been categorized yet.</p>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+                
+            <% } else { %>
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No categories found</h4>
+                        <p class="text-muted">Categories help organize your content. The default categories should be available.</p>
+                        <div class="alert alert-info mt-4">
+                            <strong>Note:</strong> If you don't see any categories, make sure you've run the database setup script to create the default categories.
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+    
+    <!-- Tips Card -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Category Tips</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-check-circle text-success me-2"></i>Best Practices</h6>
+                    <ul class="small text-muted">
+                        <li>Keep category names short and descriptive</li>
+                        <li>Use consistent naming conventions</li>
+                        <li>Don't create too many categories</li>
+                        <li>Group related content together</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-palette text-info me-2"></i>Color Usage</h6>
+                    <ul class="small text-muted">
+                        <li>Each category has a unique color</li>
+                        <li>Colors help users quickly identify content</li>
+                        <li>Use contrasting colors for better visibility</li>
+                        <li>Maintain color consistency across the site</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<%- include('partials/footer') %>

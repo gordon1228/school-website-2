@@ -16,7 +16,7 @@
                 <div class="card-body">
                     <% if (errors && errors.length > 0) { %>
                         <div class="alert alert-danger">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Please fix the following errors:</h6>
                             <ul class="mb-0">
                                 <% errors.forEach(function(error) { %>
                                     <li><%= error %></li>
@@ -25,35 +25,43 @@
                         </div>
                     <% } %>
                     
-                    <form method="POST" action="/admin/create" enctype="multipart/form-data">
+                    <form method="POST" action="/admin/create">
                         <div class="mb-3">
-                            <label for="title" class="form-label">Post Title</label>
-                            <input type="text" class="form-control" id="title" name="title" 
-                                   value="<%= typeof title !== 'undefined' ? title : '' %>"
-                                   placeholder="Enter post title..." required>
+                            <label for="title" class="form-label">Post Title *</label>
+                            <input type="text" 
+                                   class="form-control <%= errors && errors.some(e => e.includes('Title')) ? 'is-invalid' : '' %>" 
+                                   id="title" 
+                                   name="title" 
+                                   value="<%= title %>"
+                                   placeholder="Enter post title..." 
+                                   required>
+                            <div class="form-text">Maximum 255 characters</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label">Category</label>
+                            <select class="form-select" id="category_id" name="category_id">
+                                <option value="">-- Select Category (Optional) --</option>
+                                <% if (categories && categories.length > 0) { %>
+                                    <% categories.forEach(function(category) { %>
+                                        <option value="<%= category.id %>" <%= category_id == category.id ? 'selected' : '' %>>
+                                            <%= category.name %>
+                                        </option>
+                                    <% }); %>
+                                <% } %>
+                            </select>
+                            <div class="form-text">Categorize your post to help organize content</div>
                         </div>
                         
                         <div class="mb-4">
-                            <label for="content" class="form-label">Post Content</label>
-                            <textarea class="form-control" id="content" name="content" rows="10" 
-                                      placeholder="Enter post content..." required><%= typeof content !== 'undefined' ? content : '' %></textarea>
-                            <div class="form-text">You can use line breaks to format your content.</div>
-                        </div>
-                        
-                        <!-- Image Upload Section -->
-                        <div class="mb-4">
-                            <label for="images" class="form-label">
-                                <i class="fas fa-images me-2"></i>Upload Images (Optional)
-                            </label>
-                            <input type="file" class="form-control" id="images" name="images" 
-                                   multiple accept="image/jpeg,image/jpg,image/png" onchange="previewImages(this)">
-                            <div class="form-text">
-                                <i class="fas fa-info-circle me-1"></i>
-                                You can upload up to 2 images. Accepted formats: JPEG, PNG only. Maximum size: 5MB per image.
-                            </div>
-                            
-                            <!-- Image Preview Container -->
-                            <div id="image-preview-container" class="mt-3"></div>
+                            <label for="content" class="form-label">Post Content *</label>
+                            <textarea class="form-control <%= errors && errors.some(e => e.includes('Content')) ? 'is-invalid' : '' %>" 
+                                      id="content" 
+                                      name="content" 
+                                      rows="12" 
+                                      placeholder="Enter post content..." 
+                                      required><%= content %></textarea>
+                            <div class="form-text">Maximum 10,000 characters. You can use line breaks to format your content.</div>
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -67,83 +75,30 @@
                     </form>
                 </div>
             </div>
+            
+            <!-- Category preview -->
+            <% if (categories && categories.length > 0) { %>
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-tags me-2"></i>Available Categories</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <% categories.forEach(function(category) { %>
+                            <span class="badge rounded-pill" 
+                                  style="background-color: '<%= category.color %>'; cursor: pointer;"
+                                  onclick="document.getElementById('category_id').value='<%= category.id %>'">
+                                <%= category.name %>
+                            </span>
+                        <% }); %>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Click on a category badge to select it quickly</small>
+                </div>
+            </div>
+            <% } %>
         </div>
     </div>
 </div>
 </div>
-
-<script>
-function previewImages(input) {
-    const container = document.getElementById('image-preview-container');
-    container.innerHTML = '';
-    
-    if (input.files && input.files.length > 0) {
-        const previewTitle = document.createElement('h6');
-        previewTitle.className = 'mb-2';
-        previewTitle.innerHTML = '<i class="fas fa-eye me-2"></i>Image Preview:';
-        container.appendChild(previewTitle);
-        
-        const row = document.createElement('div');
-        row.className = 'row g-2';
-        
-        Array.from(input.files).slice(0, 2).forEach((file, index) => {
-            if (file.type.startsWith('image/') && (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png')) {
-                const col = document.createElement('div');
-                col.className = 'col-md-4 col-6';
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                
-                const img = document.createElement('img');
-                img.className = 'card-img-top';
-                img.style.height = '150px';
-                img.style.objectFit = 'cover';
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-                
-                const cardBody = document.createElement('div');
-                cardBody.className = 'card-body p-2';
-                
-                const fileName = document.createElement('small');
-                fileName.className = 'text-muted';
-                fileName.textContent = file.name.length > 20 ? 
-                    file.name.substring(0, 20) + '...' : file.name;
-                
-                const fileSize = document.createElement('small');
-                fileSize.className = 'text-muted d-block';
-                fileSize.textContent = formatFileSize(file.size);
-                
-                cardBody.appendChild(fileName);
-                cardBody.appendChild(fileSize);
-                card.appendChild(img);
-                card.appendChild(cardBody);
-                col.appendChild(card);
-                row.appendChild(col);
-            }
-        });
-        
-        container.appendChild(row);
-        
-        if (input.files.length > 2) {
-            const warning = document.createElement('div');
-            warning.className = 'alert alert-warning mt-2';
-            warning.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Only the first 2 images will be uploaded.';
-            container.appendChild(warning);
-        }
-    }
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-</script>
 
 <%- include('partials/footer') %>

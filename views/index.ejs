@@ -16,7 +16,8 @@
 
     <div class="container">
         <div class="row">
-            <div class="col-lg-8 mx-auto">
+            <!-- Main content -->
+            <div class="col-lg-8">
                 <h2 class="mb-4">
                     <i class="fas fa-bullhorn me-2"></i>Latest Updates
                 </h2>
@@ -25,7 +26,18 @@
                     <% posts.forEach(function(post) { %>
                         <div class="post-card">
                             <div class="card-body p-4">
-                                <h3 class="card-title h4 mb-2"><%= post.title %></h3>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h3 class="card-title h4 mb-0"><%= post.title %></h3>
+                                    <% if (post.category_name) { %>
+                                        <a href="/category/<%= post.category_slug %>" class="text-decoration-none">
+                                            <span class="badge rounded-pill" 
+                                                  style="background-color: '<%= post.category_color %>';">
+                                                <%= post.category_name %>
+                                            </span>
+                                        </a>
+                                    <% } %>
+                                </div>
+                                
                                 <p class="post-date mb-3">
                                     <i class="far fa-calendar me-2"></i>
                                     <%= new Date(post.date).toLocaleDateString('en-US', { 
@@ -37,36 +49,6 @@
                                     }) %>
                                 </p>
                                 
-                                <!-- Post Images -->
-                                <% if (post.images && post.images.length > 0) { %>
-                                    <div class="post-images mb-3">
-                                        <% if (post.images.length === 1) { %>
-                                            <!-- Single image -->
-                                            <div class="single-image text-center">
-                                                <img src="<%= post.images[0].public_path %>" 
-                                                     class="img-fluid rounded shadow-sm" 
-                                                     alt="Post image"
-                                                     style="height: 350px; width: 50%; object-fit: cover; cursor: pointer;"
-                                                     onclick="openImageModal('<%= post.images[0].public_path %>')">
-                                            </div>
-                                        <% } else { %>
-                                            <!-- Two images - side by side -->
-                                            <div class="row g-2 justify-content-center">
-                                                <% post.images.forEach(function(image) { %>
-                                                    <div class="col-auto">
-                                                        <img src="<%= image.public_path %>" 
-                                                             class="img-fluid rounded shadow-sm" 
-                                                             alt="Post image"
-                                                             style="height: 350px; width: 250px; object-fit: cover; cursor: pointer;"
-                                                             onclick="openImageModal('<%= image.public_path %>')">
-                                                    </div>
-                                                <% }); %>
-                                            </div>
-                                        <% } %>
-                                    </div>
-                                <% } %>
-                                
-                                <!-- Post Content -->
                                 <div class="card-text">
                                     <%- post.content.replace(/\n/g, '<br>') %>
                                 </div>
@@ -81,24 +63,93 @@
                     </div>
                 <% } %>
             </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Categories Widget -->
+                <% if (categories && categories.length > 0) { %>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-tags me-2"></i>Categories</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            <a href="/" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-list me-2"></i>All Posts</span>
+                                <span class="badge bg-primary rounded-pill">
+                                    <%= posts ? posts.length : 0 %>
+                                </span>
+                            </a>
+                            <% categories.forEach(function(category) { %>
+                                <% if (category.post_count > 0) { %>
+                                <a href="/category/<%= category.slug %>" 
+                                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <span class="badge rounded-pill me-2" 
+                                              style="background-color: '<%= category.color %>'; width: 12px; height: 12px;"></span>
+                                        <%= category.name %>
+                                    </span>
+                                    <span class="badge bg-secondary rounded-pill"><%= category.post_count %></span>
+                                </a>
+                                <% } %>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+                
+                <!-- Search Widget -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-search me-2"></i>Search Posts</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/search" method="GET">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="q" placeholder="Search posts..." required>
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Recent Posts Widget -->
+                <% if (posts && posts.length > 0) { %>
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Posts</h5>
+                    </div>
+                    <div class="card-body">
+                        <% posts.slice(0, 5).forEach(function(post) { %>
+                            <div class="d-flex mb-3 <%= post === posts.slice(0, 5)[posts.slice(0, 5).length - 1] ? 'mb-0' : '' %>">
+                                <div class="flex-shrink-0">
+                                    <% if (post.category_color) { %>
+                                        <div class="rounded-circle me-3" 
+                                             style="width: 12px; height: 12px; background-color: '<%= post.category_color %>'; margin-top: 6px;"></div>
+                                    <% } else { %>
+                                        <div class="rounded-circle bg-secondary me-3" 
+                                             style="width: 12px; height: 12px; margin-top: 6px;"></div>
+                                    <% } %>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1 fs-6"><%= post.title %></h6>
+                                    <small class="text-muted">
+                                        <%= new Date(post.date).toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        }) %>
+                                    </small>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Image Modal -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">Image View</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" class="img-fluid" alt="Full size image">
-            </div>
-        </div>
-    </div>
-</div>
-
 
 <%- include('partials/footer') %>

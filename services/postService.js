@@ -1,115 +1,88 @@
-// services/postService.js - Updated with image support
+// services/postService.js - Updated with Categories support
 const { getPool, sql } = require('../config/database');
-const imageService = require('./imageService');
 
 class PostService {
     
-    // Get all posts with optional filtering and images
+    // Get all posts with category information
     static async getAllPosts(includeInactive = false) {
         try {
             const pool = getPool();
             const result = await pool.request()
                 .input('IncludeInactive', sql.Bit, includeInactive)
-                .execute('GetOrderedPosts');
-            
-            const posts = result.recordset;
-            
-            // Get images for each post
-            for (const post of posts) {
-                post.images = await imageService.getPostImages(post.id);
-            }
-            
-            return posts;
+                .execute('GetOrderedPostsWithCategories');
+            return result.recordset;
         } catch (error) {
             console.error('Error fetching posts:', error);
             throw new Error('Failed to fetch posts');
         }
     }
 
-    // Get a single post by ID with images
+    // Get posts by category
+    static async getPostsByCategory(categorySlug, includeInactive = false) {
+        try {
+            const pool = getPool();
+            const result = await pool.request()
+                .input('CategorySlug', sql.NVarChar(100), categorySlug)
+                .input('IncludeInactive', sql.Bit, includeInactive)
+                .execute('GetPostsByCategory');
+            return result.recordset;
+        } catch (error) {
+            console.error('Error fetching posts by category:', error);
+            throw new Error('Failed to fetch posts by category');
+        }
+    }
+
+    // Get a single post by ID with category info
     static async getPostById(id) {
         try {
             const pool = getPool();
             const result = await pool.request()
                 .input('id', sql.NVarChar(50), id)
-                .query('SELECT * FROM Posts WHERE id = @id');
-            
-            const post = result.recordset[0];
-            if (post) {
-                post.images = await imageService.getPostImages(post.id);
-            }
-            
-            return post || null;
+                .query(`
+                    SELECT 
+                        p.id, p.title, p.content, p.created_at as date, 
+                        p.updated_at, p.is_active, p.display_order, p.category_id,
+                        c.name as category_name, c.slug as category_slug, c.color as category_color
+                    FROM Posts p
+                    LEFT JOIN Categories c ON p.category_id = c.id
+                    WHERE p.id = @id
+                `);
+            return result.recordset[0] || null;
         } catch (error) {
             console.error('Error fetching post by ID:', error);
             throw new Error('Failed to fetch post');
         }
     }
 
-    // Create a new post with image support
-    static async createPost(title, content, adminUserId = null, imageFiles = []) {
+    // Create a new post with category
+    static async createPost(title, content, categoryId = null, adminUserId = null) {
         try {
             // Validate input
             const validation = this.validatePostData(title, content);
             if (!validation.isValid) {
                 return { success: false, errors: validation.errors };
-            }
-
-            // Validate image count
-            if (imageFiles && imageFiles.length > 2) {
-                return { 
-                    success: false, 
-                    errors: ['Maximum 2 images allowed per post'] 
-                };
             }
 
             const pool = getPool();
             const id = this.generateId();
             
-            // Create the post first
             await pool.request()
                 .input('Id', sql.NVarChar(50), id)
                 .input('Title', sql.NVarChar(255), title.trim())
                 .input('Content', sql.NText, content.trim())
+                .input('CategoryId', sql.Int, categoryId)
                 .input('AdminUserId', sql.Int, adminUserId)
                 .execute('CreatePost');
             
-            // Process and save images if any
-            const uploadedImages = [];
-            if (imageFiles && imageFiles.length > 0) {
-                for (const file of imageFiles) {
-                    try {
-                        // Process the image
-                        const processedImage = await imageService.processImage(file.path, file.filename);
-                        
-                        // Save to database
-                        const saveResult = await imageService.saveImageToDatabase(id, processedImage);
-                        
-                        if (saveResult.success) {
-                            uploadedImages.push({
-                                imageId: saveResult.imageId,
-                                ...processedImage
-                            });
-                        }
-                    } catch (imageError) {
-                        console.error('Error processing image:', imageError);
-                        // Continue with other images even if one fails
-                    }
-                }
-            }
-            return { 
-                success: true, 
-                id,
-                uploadedImages: uploadedImages
-            };
+            return { success: true, id };
         } catch (error) {
             console.error('Error creating post:', error);
             return { success: false, error: error.message };
         }
-    }   
+    }
 
-    // Update an existing post with image support
-    static async updatePost(id, title, content, adminUserId = null, imageFiles = []) {
+    // Update an existing post with category
+    static async updatePost(id, title, content, categoryId = null, adminUserId = null) {
         try {
             // Validate input
             const validation = this.validatePostData(title, content);
@@ -117,97 +90,36 @@ class PostService {
                 return { success: false, errors: validation.errors };
             }
 
-            // Check current image count
-            const existingImages = await imageService.getPostImages(id);
-            const currentImageCount = existingImages.length;
-            const newImageCount = imageFiles ? imageFiles.length : 0;
-            
-            // Validate total image count
-            const imageValidation = this.validateImageCount(currentImageCount, newImageCount);
-            if (!imageValidation.isValid) {
-                return { 
-                    success: false, 
-                    errors: [imageValidation.error] 
-                };
-            }
-
             const pool = getPool();
             
-            // Update the post
             await pool.request()
                 .input('Id', sql.NVarChar(50), id)
                 .input('Title', sql.NVarChar(255), title.trim())
                 .input('Content', sql.NText, content.trim())
+                .input('CategoryId', sql.Int, categoryId)
                 .input('AdminUserId', sql.Int, adminUserId)
                 .execute('UpdatePost');
             
-            // Process and save new images if any
-            const uploadedImages = [];
-            if (imageFiles && imageFiles.length > 0) {
-                for (const file of imageFiles) {
-                    try {
-                        // Process the image
-                        const processedImage = await imageService.processImage(file.path, file.filename);
-                        
-                        // Save to database
-                        const saveResult = await imageService.saveImageToDatabase(id, processedImage);
-                        
-                        if (saveResult.success) {
-                            uploadedImages.push({
-                                imageId: saveResult.imageId,
-                                ...processedImage
-                            });
-                        }
-                    } catch (imageError) {
-                        console.error('Error processing image:', imageError);
-                        // Continue with other images even if one fails
-                    }
-                }
-            }
-            
-            return { 
-                success: true,
-                uploadedImages: uploadedImages
-            };
+            return { success: true };
         } catch (error) {
             console.error('Error updating post:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Delete a post (images will be deleted via CASCADE)
+    // Delete a post
     static async deletePost(id, adminUserId = null) {
         try {
-            // Get post images before deletion for cleanup
-            const images = await imageService.getPostImages(id);
-            
             const pool = getPool();
             
-            // Delete the post (CASCADE will handle PostImages table)
             await pool.request()
                 .input('Id', sql.NVarChar(50), id)
                 .input('AdminUserId', sql.Int, adminUserId)
                 .execute('DeletePost');
             
-            // Manually delete image files from filesystem
-            for (const image of images) {
-                await imageService.deleteImage(image.id);
-            }
-            
             return { success: true };
         } catch (error) {
             console.error('Error deleting post:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // Delete individual image from post
-    static async deletePostImage(imageId, adminUserId = null) {
-        try {
-            const result = await imageService.deleteImage(imageId);
-            return result;
-        } catch (error) {
-            console.error('Error deleting post image:', error);
             return { success: false, error: error.message };
         }
     }
@@ -259,38 +171,26 @@ class PostService {
         };
     }
 
-    // Validate image count for posts
-    static validateImageCount(existingImageCount, newImageCount) {
-    const totalImages = existingImageCount + newImageCount;
-    const maxImages = 2;
-    
-        if (totalImages > maxImages) {
-            return {
-                isValid: false,
-                error: `Maximum ${maxImages} images allowed per post. Current: ${existingImageCount}, trying to add: ${newImageCount}`
-            };
-        }
-        
-        return { isValid: true };
-    }
-
     // Generate unique ID
     static generateId() {
         return Date.now().toString() + Math.random().toString(36).substr(2, 9);
     }
 
-    // Get post statistics with image counts
+    // Get post statistics with category breakdown
     static async getPostStats() {
         try {
             const pool = getPool();
             const result = await pool.request().query(`
                 SELECT 
                     COUNT(*) as total_posts,
-                    COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_posts,
-                    COUNT(CASE WHEN is_active = 0 THEN 1 END) as inactive_posts,
-                    MAX(created_at) as latest_post_date,
-                    (SELECT COUNT(*) FROM PostImages) as total_images
-                FROM Posts
+                    COUNT(CASE WHEN p.is_active = 1 THEN 1 END) as active_posts,
+                    COUNT(CASE WHEN p.is_active = 0 THEN 1 END) as inactive_posts,
+                    MAX(p.created_at) as latest_post_date,
+                    STRING_AGG(CONCAT(c.name, ': ', 
+                        COUNT(CASE WHEN p.category_id = c.id AND p.is_active = 1 THEN 1 END)), ', ') as category_breakdown
+                FROM Posts p
+                LEFT JOIN Categories c ON p.category_id = c.id
+                GROUP BY ()
             `);
             return result.recordset[0];
         } catch (error) {
@@ -299,8 +199,8 @@ class PostService {
         }
     }
 
-    // Search posts with images
-    static async searchPosts(query, includeInactive = false) {
+    // Search posts with category filtering
+    static async searchPosts(query, categorySlug = null, includeInactive = false) {
         try {
             if (!query || query.trim().length === 0) {
                 return [];
@@ -309,29 +209,83 @@ class PostService {
             const pool = getPool();
             const searchTerm = `%${query.trim()}%`;
             
-            const result = await pool.request()
-                .input('searchTerm', sql.NVarChar(255), searchTerm)
-                .input('includeInactive', sql.Bit, includeInactive)
-                .query(`
-                    SELECT * FROM Posts 
-                    WHERE (title LIKE @searchTerm OR content LIKE @searchTerm)
-                    AND (@includeInactive = 1 OR is_active = 1)
-                    ORDER BY 
-                        CASE WHEN display_order IS NOT NULL THEN display_order END,
-                        created_at DESC
-                `);
+            let whereClause = `WHERE (p.title LIKE @searchTerm OR p.content LIKE @searchTerm)
+                AND (@includeInactive = 1 OR p.is_active = 1)`;
             
-            const posts = result.recordset;
-            
-            // Get images for each post
-            for (const post of posts) {
-                post.images = await imageService.getPostImages(post.id);
+            if (categorySlug) {
+                whereClause += ` AND c.slug = @categorySlug`;
             }
             
-            return posts;
+            const request = pool.request()
+                .input('searchTerm', sql.NVarChar(255), searchTerm)
+                .input('includeInactive', sql.Bit, includeInactive);
+                
+            if (categorySlug) {
+                request.input('categorySlug', sql.NVarChar(100), categorySlug);
+            }
+            
+            const result = await request.query(`
+                SELECT 
+                    p.id, p.title, p.content, p.created_at as date, 
+                    p.updated_at, p.is_active, p.display_order, p.category_id,
+                    c.name as category_name, c.slug as category_slug, c.color as category_color
+                FROM Posts p 
+                LEFT JOIN Categories c ON p.category_id = c.id
+                ${whereClause}
+                ORDER BY 
+                    CASE WHEN p.display_order IS NOT NULL THEN p.display_order END,
+                    p.created_at DESC
+            `);
+            
+            return result.recordset;
         } catch (error) {
             console.error('Error searching posts:', error);
             throw new Error('Failed to search posts');
+        }
+    }
+
+    // Category management methods
+    static async getAllCategories() {
+        try {
+            const pool = getPool();
+            const result = await pool.request().execute('GetAllCategories');
+            return result.recordset;
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            throw new Error('Failed to fetch categories');
+        }
+    }
+
+    static async getCategoryBySlug(slug) {
+        try {
+            const pool = getPool();
+            const result = await pool.request()
+                .input('slug', sql.NVarChar(100), slug)
+                .query('SELECT * FROM Categories WHERE slug = @slug AND is_active = 1');
+            return result.recordset[0] || null;
+        } catch (error) {
+            console.error('Error fetching category by slug:', error);
+            throw new Error('Failed to fetch category');
+        }
+    }
+
+    static async getPostCountsByCategory() {
+        try {
+            const pool = getPool();
+            const result = await pool.request().query(`
+                SELECT 
+                    c.id, c.name, c.slug, c.color,
+                    COUNT(p.id) as post_count
+                FROM Categories c
+                LEFT JOIN Posts p ON c.id = p.category_id AND p.is_active = 1
+                WHERE c.is_active = 1
+                GROUP BY c.id, c.name, c.slug, c.color, c.display_order
+                ORDER BY c.display_order, c.name
+            `);
+            return result.recordset;
+        } catch (error) {
+            console.error('Error fetching post counts by category:', error);
+            throw new Error('Failed to fetch category post counts');
         }
     }
 }

@@ -13,18 +13,51 @@
 <div class="container">
     <div class="dashboard-actions">
         <div class="row align-items-center">
-            <div class="col-md-8">
+            <div class="col-md-6">
                 <h4 class="mb-3 mb-md-0">
                     <i class="fas fa-newspaper me-2"></i>Posts Management
                 </h4>
             </div>
-            <div class="col-md-4 text-md-end">
-                <a href="/admin/create" class="btn btn-admin">
-                    <i class="fas fa-plus me-2"></i>Create New Post
-                </a>
+            <div class="col-md-6 text-md-end">
+                <div class="btn-group" role="group">
+                    <a href="/admin/create" class="btn btn-admin">
+                        <i class="fas fa-plus me-2"></i>Create New Post
+                    </a>
+                    <a href="/admin/categories" class="btn btn-outline-secondary">
+                        <i class="fas fa-tags me-2"></i>Manage Categories
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+    
+    <!-- Category filter -->
+    <% if (categories && categories.length > 0) { %>
+    <div class="card mb-4">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label mb-0"><strong>Filter by Category:</strong></label>
+                </div>
+                <div class="col-md-9">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-secondary category-filter active" data-category="all">
+                            All Posts
+                        </button>
+                        <% categories.forEach(function(category) { %>
+                            <button class="btn btn-sm btn-outline-secondary category-filter" 
+                                    data-category="<%= category.id %>"
+                                    style="border-color: '<%= category.color %>'; color: '<%= category.color %>';">
+                                <%= category.name %> 
+                                <span class="badge bg-light text-dark ms-1"><%= category.post_count %></span>
+                            </button>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
     
     <div class="row">
         <div class="col-12">
@@ -46,15 +79,14 @@
                                     <tr>
                                         <th width="50">Order</th>
                                         <th>Title</th>
-                                        <th>Content</th>
-                                        <th>Image</th>
+                                        <th width="120">Category</th>
                                         <th class="d-none d-md-table-cell" width="150">Date</th>
                                         <th class="text-center" width="150">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="sortable-posts">
                                     <% posts.forEach(function(post, index) { %>
-                                        <tr data-id="<%= post.id %>">
+                                        <tr data-id="<%= post.id %>" data-category="<%= post.category_id || 'null' %>">
                                             <td class="align-middle">
                                                 <div class="d-flex align-items-center">
                                                     <i class="fas fa-grip-vertical me-2" title="Drag to reorder"></i>
@@ -68,38 +100,13 @@
                                                 </small>
                                             </td>
                                             <td class="align-middle">
-                                                <h6 class="mb-1"><%= post.content %></h6>
-                                                <small class="text-muted d-md-none">
-                                                    <%= new Date(post.date).toLocaleDateString() %>
-                                                </small>
-                                            </td>
-                                            <td class="align-middle">
-                                               <% if (post.images && post.images.length > 0) { %>
-                                                    <div class="post-images mb-3">
-                                                        <% if (post.images.length === 1) { %>
-                                                            <!-- Single image -->
-                                                            <div class="single-image text-center">
-                                                                <img src="<%= post.images[0].public_path %>" 
-                                                                    class="img-fluid rounded shadow-sm" 
-                                                                    alt="Post image"
-                                                                    style="height: 175px; width: 25%; object-fit: cover; cursor: pointer;"
-                                                                    onclick="openImageModal('<%= post.images[0].public_path %>')">
-                                                            </div>
-                                                        <% } else { %>
-                                                            <!-- Two images - side by side -->
-                                                            <div class="row g-2 justify-content-center">
-                                                                <% post.images.forEach(function(image) { %>
-                                                                    <div class="col-auto">
-                                                                        <img src="<%= image.public_path %>" 
-                                                                            class="img-fluid rounded shadow-sm" 
-                                                                            alt="Post image"
-                                                                            style="height: 175px; width: 125px; object-fit: cover; cursor: pointer;"
-                                                                            onclick="openImageModal('<%= image.public_path %>')">
-                                                                    </div>
-                                                                <% }); %>
-                                                            </div>
-                                                        <% } %>
-                                                    </div>
+                                                <% if (post.category_name) { %>
+                                                    <span class="badge rounded-pill" 
+                                                          style="background-color: '<%= post.category_color %>';">
+                                                        <%= post.category_name %>
+                                                    </span>
+                                                <% } else { %>
+                                                    <span class="badge bg-secondary rounded-pill">Uncategorized</span>
                                                 <% } %>
                                             </td>
                                             <td class="d-none d-md-table-cell align-middle">
@@ -155,18 +162,47 @@
 </div>
 </div>
 
-<!-- Image Modal -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">Image View</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" class="img-fluid" alt="Full size image">
-            </div>
-        </div>
-    </div>
-</div>
+<script>
+// Category filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryFilters = document.querySelectorAll('.category-filter');
+    const postRows = document.querySelectorAll('#sortable-posts tr[data-id]');
+    
+    categoryFilters.forEach(filter => {
+        filter.addEventListener('click', function() {
+            // Update active state
+            categoryFilters.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            const selectedCategory = this.dataset.category;
+            
+            // Show/hide posts based on category
+            postRows.forEach(row => {
+                const postCategory = row.dataset.category;
+                
+                if (selectedCategory === 'all' || 
+                    postCategory === selectedCategory || 
+                    (selectedCategory === 'null' && postCategory === 'null')) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update row numbers for visible posts
+            let visibleIndex = 1;
+            postRows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const orderCell = row.querySelector('td:first-child small');
+                    if (orderCell) {
+                        orderCell.textContent = `#${visibleIndex}`;
+                        visibleIndex++;
+                    }
+                }
+            });
+        });
+    });
+});
+</script>
+
 <%- include('partials/footer') %>

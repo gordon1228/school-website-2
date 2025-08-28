@@ -1,9 +1,9 @@
 <!-- views/partials/navbar.ejs -->
-<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);">
     <div class="container">
-        <a class="navbar-brand" href="/">
+        <a class="navbar-brand" style="color: black;" href="/">
             <i class="fas fa-graduation-cap me-2"></i>
-            School Website
+            School Website 2
         </a>
         
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -13,24 +13,24 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/">
+                    <a class="nav-link" href="/" style="color: black;">
                         <i class="fas fa-home me-1"></i>Home
                     </a>
                 </li>
                 <% if (typeof isAuthenticated !== 'undefined' && isAuthenticated) { %>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/dashboard">
+                        <a class="nav-link" href="/admin/dashboard" style="color: black;">
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/logout">
+                        <a class="nav-link" href="/admin/logout" style="color: black;">
                             <i class="fas fa-sign-out-alt me-1"></i>Logout
                         </a>
                     </li>
                 <% } else { %>
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin/login">
+                        <a class="nav-link" href="/admin/login" style="color: black;">
                             <i class="fas fa-sign-in-alt me-1"></i>Admin Login
                         </a>
                     </li>
